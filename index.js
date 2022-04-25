@@ -23,19 +23,38 @@ async function run() {
 
     // get / read
     app.get('/product', async(req, res) => {
+
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+
+      console.log(page, size);
+      
       const query = {};
       const cursor = productCollection.find(query);
-      const products = await cursor.toArray();
+      if(page || size){
+        products = await cursor.skip(page*size).limit(size).toArray();
+      }
+      else{
+        products = await cursor.toArray();
+      }
       res.send(products)
     })
 
 
     // total product count for pagination
     app.get('/productCount', async(req, res) => {
-      const query = {}
-      const cursor = productCollection.find(query)
-      const count = await cursor.count()
+      const count = await productCollection.estimatedDocumentCount();
       res.send({count})
+    })
+
+    //use post to get products by ids
+    app.post('/productByKeys',async(req,res)=>{
+      const keys = req.body;
+      const ids = keys.map(id => ObjectId(id))
+      const query = {_id: {$in: ids}}
+      const cursor = productCollection.find(query);
+      const products = await cursor.toArray();
+      res.send(products);
     })
     
     
